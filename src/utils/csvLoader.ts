@@ -41,11 +41,6 @@ function resolveImageUrl(imageUrl: string): string {
 	return imageUrl;
 }
 
-/**
- * Parse CSV text into Item objects
- * Expected CSV format: title,description,difficulty,imageUrl
- * OR: id,title,description,difficulty,imageUrl (if you want to specify IDs)
- */
 export function parseItemsFromCSV(csvText: string): Item[] {
 	const lines = csvText.trim().split('\n');
 	
