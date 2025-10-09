@@ -5,6 +5,7 @@ import DifficultyStats from "./DifficultyStats";
 import SettingsModal from "./SettingsModal";
 import TaskListModal from "./TaskListModal";
 import InfoModal from "./InfoModal";
+import TaskRulesModal from "./TaskRulesModal";
 import { mulberry32, stringToSeed } from "../utils/prng";
 import { getItems, setLoadedItems, type Item, type Difficulty } from "../data/items";
 import { loadState, saveState, exportStateJSON, importStateJSON } from "../db/storage";
@@ -48,6 +49,7 @@ const Grid = forwardRef<GridHandle, Props>(({ tileSize = TILE_SIZE, initialSeed 
 	const [newSeedInput, setNewSeedInput] = useState<string>("");
 
 	const [showInfo, setShowInfo] = useState(false);
+	const [showTaskRules, setShowTaskRules] = useState(false);
 
 	const [showTaskList, setShowTaskList] = useState(false);
 
@@ -636,6 +638,16 @@ const Grid = forwardRef<GridHandle, Props>(({ tileSize = TILE_SIZE, initialSeed 
 			<InfoModal
 				showInfo={showInfo}
 				onClose={() => setShowInfo(false)}
+				onOpenTaskRules={() => {
+					setShowInfo(false);
+					setShowTaskRules(true);
+				}}
+			/>
+
+			{/* Task Rules Modal */}
+			<TaskRulesModal
+				showTaskRules={showTaskRules}
+				onClose={() => setShowTaskRules(false)}
 			/>
 
 			{/* Task List Modal */}
