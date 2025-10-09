@@ -13,4 +13,5 @@ export default defineConfig({
 		// Optimize asset handling
 		assetsInlineLimit: 0, // Don't inline images, keep them as separate files for better caching
 	},
+	base: "/"
 });
