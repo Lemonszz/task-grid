@@ -42,6 +42,9 @@ export default function StorageBanner() {
 				📦 This app stores your progress data locally in your browser.{" "}
 				<strong>No data is sent to external servers.</strong> Make sure to export your save regularly to back up your progress.
 			</div>
+			<div style={{ fontSize: "14px", lineHeight: "1.5" }}>
+				Created using intellectual property belonging to Jagex Limited under the terms of Jagex's Fan Content Policy. This content is not endorsed by or affiliated with Jagex.
+			</div>
 			<button className="btn" onClick={handleAcknowledge} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
 				Got it
 			</button>
