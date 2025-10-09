@@ -1,6 +1,6 @@
 # Task Grid
 
-A React + TypeScript + Vite application for managing tasks in a grid layout.
+[Check it out!](https://taskgrid.lemons.party/)
 
 ## Getting Started
 
