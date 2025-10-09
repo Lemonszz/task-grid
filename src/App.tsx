@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import Grid, { type GridHandle } from "./components/Grid";
 import StorageBanner from "./components/StorageBanner";
 
-const VERSION = "0.1.0"; // Update this when making releases
+const VERSION = "0.2.0"; // Update this when making releases
 
 export default function App() {
 	const gridRef = useRef<GridHandle | null>(null);
