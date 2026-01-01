@@ -9,6 +9,10 @@ export default defineConfig({
     build: {
         assetsInlineLimit: 0,
         rollupOptions: {
+            input: {
+                main: './index.html',
+                zoom: './zoom.html',
+            },
             output: {
                 assetFileNames: (assetInfo) => {
                     // Add cache busting for images in production

@@ -8,10 +8,10 @@ export const TILE_SIZE = 128;
 export const VIEWPORT_BUFFER = 3; // Extra tiles rendered beyond viewport edges
 
 // Animation durations (milliseconds)
-export const TILE_REVEAL_DURATION = 1500;
+export const TILE_REVEAL_DURATION = 1200; // Reduced from 1500ms for faster slot machine
 export const TILE_CELEBRATION_DURATION = 500;
 export const PAN_ANIMATION_DURATION = 500;
-export const SLOT_CYCLE_INTERVAL = 100;
+export const SLOT_CYCLE_INTERVAL = 120; // Reduced from 150ms for faster cycling
 export const SLOT_CYCLES_COUNT = 15;
 
 // Drag detection

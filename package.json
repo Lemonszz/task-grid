@@ -7,6 +7,7 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
+		"test": "vite --open /zoom.html",
 		"download-images": "node scripts/download-images.js",
 		"version:patch": "npm version patch",
 		"version:minor": "npm version minor",

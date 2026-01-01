@@ -1,4 +1,4 @@
-import React, { useEffect, useState, memo } from "react";
+import React, { useEffect, useState, memo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Item } from "../data/items";
 import { getTileBackgroundColor } from "../utils/difficultyColors";
@@ -15,6 +15,8 @@ type Props = {
 	item?: Item | null;
 	onClick: () => void;
 	randomItems?: Item[]; // Random items for slot machine animation
+	forceRevealAnimation?: boolean; // Force the slot machine animation to play
+	disableCelebration?: boolean; // Disable the celebration animation after reveal
 };
 
 function Tile({
@@ -27,7 +29,9 @@ function Tile({
 	isLocked,
 	item,
 	onClick,
-	randomItems = []
+	randomItems = [],
+	forceRevealAnimation = false,
+	disableCelebration = false
 }: Props) {
 	const [showRevealAnimation, setShowRevealAnimation] = useState(false);
 	const [showCelebration, setShowCelebration] = useState(false);
@@ -35,7 +39,56 @@ function Tile({
 	const [slotIndex, setSlotIndex] = useState(0);
 	const [isInitialMount, setIsInitialMount] = useState(true);
 	const [shuffledItems, setShuffledItems] = useState<Item[]>([]);
+	const [hasPlayedAnimation, setHasPlayedAnimation] = useState(false);
+	const slotIndexRef = useRef(0); // Use ref to track actual index
+	const shuffledItemsRef = useRef<Item[]>([]); // Store shuffled items in ref too
+	const animationFrameRef = useRef<number | null>(null);
 	
+	// Slot machine animation effect - separate from item tracking
+	useEffect(() => {
+		if (!showRevealAnimation || shuffledItemsRef.current.length === 0) return;
+		
+		console.log('🎬 Starting slot animation loop');
+		const startTime = performance.now();
+		let lastUpdateTime = startTime;
+		slotIndexRef.current = 0;
+		setSlotIndex(0);
+		
+		const animate = (currentTime: number) => {
+			const elapsed = currentTime - startTime;
+			const timeSinceLastUpdate = currentTime - lastUpdateTime;
+			
+			// Update index every SLOT_CYCLE_INTERVAL ms
+			if (timeSinceLastUpdate >= SLOT_CYCLE_INTERVAL) {
+				slotIndexRef.current++;
+				setSlotIndex(slotIndexRef.current);
+				lastUpdateTime = currentTime;
+				const currentItem = shuffledItemsRef.current[slotIndexRef.current % shuffledItemsRef.current.length];
+				console.log(`   🎲 Cycle ${slotIndexRef.current}: slotIndex=${slotIndexRef.current}, showing ${currentItem?.title}`);
+			}
+			
+			// Continue animation until TILE_REVEAL_DURATION
+			if (elapsed < TILE_REVEAL_DURATION) {
+				animationFrameRef.current = requestAnimationFrame(animate);
+			} else {
+				console.log(`   ✅ Animation complete after ${slotIndexRef.current} cycles`);
+				setShowRevealAnimation(false);
+				animationFrameRef.current = null;
+			}
+		};
+		
+		animationFrameRef.current = requestAnimationFrame(animate);
+		
+		return () => {
+			if (animationFrameRef.current !== null) {
+				console.log('   ⚠️ Cleaning up animation frame');
+				cancelAnimationFrame(animationFrameRef.current);
+				animationFrameRef.current = null;
+			}
+		};
+	}, [showRevealAnimation]);
+	
+	// Item tracking effect - triggers when item is revealed
 	useEffect(() => {
 		const currentItemId = item?.id;
 		
@@ -45,38 +98,37 @@ function Tile({
 			return;
 		}
 		
-		// Only play animation when item is FIRST assigned (undefined -> defined)
-		// This happens when a tile is revealed for the first time
-		if (!prevItemId && currentItemId && isRevealed) {
+		// Play animation when:
+		// 1. Item is FIRST assigned (undefined -> defined) AND isRevealed, OR
+		// 2. forceRevealAnimation is true and we haven't played it yet
+		const shouldPlayAnimation = 
+			(!prevItemId && currentItemId && isRevealed && !hasPlayedAnimation) ||
+			(forceRevealAnimation && currentItemId && isRevealed && !hasPlayedAnimation);
+		
+		if (shouldPlayAnimation && randomItems.length > 0) {
+			console.log('🎰 PREPARING SLOT MACHINE');
+			console.log('   randomItems received:', randomItems.length);
+			
+			// Shuffle the items
 			const shuffled = [...randomItems];
 			for (let i = shuffled.length - 1; i > 0; i--) {
 				const j = Math.floor(Math.random() * (i + 1));
 				[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 			}
+			
+			console.log('   Shuffled items:', shuffled.map(i => i.title).join(', '));
+			
+			// Store in both state and ref
 			setShuffledItems(shuffled);
+			shuffledItemsRef.current = shuffled;
+			setHasPlayedAnimation(true);
 			
+			// Trigger the animation loop (in the other useEffect)
 			setShowRevealAnimation(true);
-			setSlotIndex(0);
-			
-			const interval = setInterval(() => {
-				setSlotIndex(prev => prev + 1);
-			}, SLOT_CYCLE_INTERVAL);
-			
-			const timer = setTimeout(() => {
-				clearInterval(interval);
-				setShowRevealAnimation(false);
-				setShowCelebration(true);
-				setTimeout(() => setShowCelebration(false), TILE_CELEBRATION_DURATION);
-			}, TILE_REVEAL_DURATION);
-			
-			return () => {
-				clearInterval(interval);
-				clearTimeout(timer);
-			};
 		}
 		
 		setPrevItemId(currentItemId);
-	}, [item?.id, isRevealed]);
+	}, [item?.id, isRevealed, forceRevealAnimation, prevItemId, hasPlayedAnimation, randomItems]);
 	
 	const classes = ["tile"];
 	if (isRevealed) classes.push("revealed");
@@ -85,6 +137,11 @@ function Tile({
 	const displayItem = showRevealAnimation && shuffledItems.length > 0
 		? shuffledItems[slotIndex % shuffledItems.length]
 		: item;
+	
+	// DEBUG: Log every render during slot animation
+	if (showRevealAnimation && shuffledItems.length > 0) {
+		console.log(`🎨 RENDER: slotIndex=${slotIndex}, displaying: ${displayItem?.title}`);
+	}
 	
 	const backgroundColor = getTileBackgroundColor(displayItem?.difficulty, isRevealed);
 	
@@ -99,27 +156,14 @@ function Tile({
 				background: backgroundColor,
 				opacity: isCompleted ? 0.3 : 1,
 			}}
-			whileHover={{ 
-				scale: isCompleted ? 0.67 : 1.03, 
-				rotateZ: isRevealed && !showRevealAnimation && !isCompleted ? 2 : 0,
-				zIndex: 50
-			}}
-			animate={showRevealAnimation ? {
-				scale: [1, 1.25, 1.25, 1],
-				rotateZ: [0, -8, 8, -8, 8, -6, 6, -4, 4, -2, 2, 0],
-				zIndex: 100
-			} : isCompleted ? {
+			animate={isCompleted ? {
 				scale: 0.67,
 				zIndex: 1
 			} : {
 				scale: 1,
 				zIndex: 1
 			}}
-			transition={showRevealAnimation ? { 
-				duration: TILE_REVEAL_DURATION / 1000,
-				times: [0, 0.2, 0.8, 1],
-				ease: "easeInOut" 
-			} : { type: "spring", stiffness: 500, damping: 30 }}
+			transition={{ type: "spring", stiffness: 500, damping: 30 }}
 			onClick={(e) => {
 				e.stopPropagation();
 				onClick();
@@ -143,7 +187,7 @@ function Tile({
 									key={`current-${slotIndex}`}
 									initial={{ y: 0 }}
 									animate={{ y: size * 0.8 }}
-									transition={{ duration: 0.1, ease: "linear" }}
+									transition={{ duration: SLOT_CYCLE_INTERVAL / 1000, ease: "linear" }}
 									style={{ 
 										width: "100%", 
 										height: "100%",
@@ -171,7 +215,7 @@ function Tile({
 									key={`next-${slotIndex}`}
 									initial={{ y: -size * 0.8 }}
 									animate={{ y: 0 }}
-									transition={{ duration: 0.1, ease: "linear" }}
+									transition={{ duration: SLOT_CYCLE_INTERVAL / 1000, ease: "linear" }}
 									style={{ 
 										width: "100%", 
 										height: "100%",
@@ -198,11 +242,6 @@ function Tile({
 							</>
 						) : (
 							<motion.div
-								animate={showCelebration ? {
-									scale: [1, 1.15, 1],
-									rotateZ: [0, 5, -5, 0]
-								} : { scale: 1, rotateZ: 0 }}
-								transition={showCelebration ? { duration: 0.5, ease: "easeOut" } : {}}
 								style={{ 
 									width: "85%", 
 									height: "85%",
